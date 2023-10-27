@@ -67,6 +67,8 @@ export const computeAPITree = (serviceNode: ServiceNode, config: ComputeAPITreeC
   const mergedConfig = defaults(config, defaultComputerAPITreeConfig);
   const tree: TableOfContentsItem[] = [];
 
+  serviceNode.children = serviceNode.children.sort((a, b) => a.uri.localeCompare(b.uri));
+
   tree.push({
     id: '/',
     slug: '/',
@@ -84,9 +86,9 @@ export const computeAPITree = (serviceNode: ServiceNode, config: ComputeAPITreeC
     const { groups, ungrouped } = computeTagGroups(serviceNode);
 
     // Show ungroupped operations above tag groups
-    ungrouped.forEach(operationNode => {
+    for (const operationNode of ungrouped) {
       if (mergedConfig.hideInternal && operationNode.data.internal) {
-        return;
+        continue;
       }
       tree.push({
         id: operationNode.uri,
@@ -95,28 +97,29 @@ export const computeAPITree = (serviceNode: ServiceNode, config: ComputeAPITreeC
         type: operationNode.type,
         meta: operationNode.data.method,
       });
-    });
+    }
 
-    groups.forEach(group => {
-      const items = group.items.flatMap(operationNode => {
+    for (const group of groups) {
+      const items = [];
+      for (const operationNode of group.items) {
         if (mergedConfig.hideInternal && operationNode.data.internal) {
-          return [];
+          continue;
         }
-        return {
+        items.push({
           id: operationNode.uri,
           slug: operationNode.uri,
           title: operationNode.name,
           type: operationNode.type,
           meta: operationNode.data.method,
-        };
-      });
+        });
+      }
       if (items.length > 0) {
         tree.push({
           title: group.title,
           items,
         });
       }
-    });
+    }
   }
 
   let schemaNodes = serviceNode.children.filter(node => node.type === NodeType.Model);
@@ -129,7 +132,7 @@ export const computeAPITree = (serviceNode: ServiceNode, config: ComputeAPITreeC
       title: 'Schemas',
     });
 
-    schemaNodes.forEach(node => {
+    for (let node of schemaNodes) {
       tree.push({
         id: node.uri,
         slug: node.uri,
@@ -137,7 +140,7 @@ export const computeAPITree = (serviceNode: ServiceNode, config: ComputeAPITreeC
         type: node.type,
         meta: '',
       });
-    });
+    }
   }
   return tree;
 };
